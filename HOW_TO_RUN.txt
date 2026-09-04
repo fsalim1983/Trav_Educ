@@ -1,0 +1,12 @@
+FET Desktop v2.3
+================
+npm install && start.bat
+
+v2.3:
+- ConstraintStudentsSetActivityTagMaxHoursDailyRealDays:
+  multi tags + multi classes + weight/value + Add
+  creates one list row PER tag; Edit / Delete supported
+  export loops the list into FET XML
+- Nav button left, non-covering
+- Master teacher/room timetable full-bleed cards
+- Preferred rooms denser one-line layout

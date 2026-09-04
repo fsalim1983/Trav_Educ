@@ -1,0 +1,14 @@
+{
+  "name": "fet-desktop",
+  "version": "2.2.0",
+  "description": "FET Desktop: Manager (build .fet) + Viewer (fet-cl generate, print, aSc export)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "FET Team",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^30.0.0"
+  }
+}

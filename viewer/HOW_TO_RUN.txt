@@ -1,0 +1,17 @@
+FET Desktop v2.2
+================
+
+Manager (build .fet) + Viewer (fet-cl generate / print)
+
+Run:
+  npm install
+  start.bat
+
+Or browser: start-local.bat
+
+v2.2 notes:
+- Smart multi-select modals: search filter + dynamic trigger text
+- Timetable cells: full-bleed cards (teachers / rooms / classes)
+- Drag & drop visual feedback on activity cards (green/red slots)
+- Top persistent button: توليد الجداول / المعاينة
+- Activity split rules: Duration+Divisions (RULE A split / RULE B block)

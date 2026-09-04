@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Logs and crash dumps
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+crash.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build / pack output
+dist/
+out/
+*.tgz
+
+# Local FET engine binary (place fet-cl.exe in bin/ yourself)
+bin/*.exe
+bin/*.dll
+viewer/bin/*.exe
+viewer/bin/*.dll
+
+# Generated timetable output
+*.fet~
+*_timetable.html
+*_activities.xml

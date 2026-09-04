@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>FET Desktop — Viewer — تطبيق الجداول الزمنية — FET</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header no-print">
+  <button class="btn-icon" id="btnOpenSettings" title="الإعدادات">⚙️</button>
+  <h1>📅 FET Desktop — Viewer — تطبيق الجداول الزمنية المحلي</h1>
+  <div class="file-status" id="fileStatus">لم يتم تحميل أي ملف بعد</div>
+</header>
+
+<nav class="tabs no-print" id="tabs">
+  <button class="tab-btn active" data-tab="import">1. الاستيراد والتوليد</button>
+  <button class="tab-btn" data-tab="data">2. تصفح البيانات</button>
+  <button class="tab-btn" data-tab="timetables">3. الجداول</button>
+  <button class="tab-btn" data-tab="vacant">4. القاعات الشاغرة</button>
+  <button class="tab-btn" data-tab="export">5. تصدير aSc</button>
+</nav>
+
+<!-- ============ SETTINGS MODAL (tabbed pages, like the reference screenshots) ============ -->
+<div class="modal-overlay no-print" id="settingsModal" style="display:none;">
+  <div class="modal-box settings-modal">
+    <div class="modal-header">
+      <button class="modal-close" id="btnCloseSettings">✕</button>
+      <h2>الإعدادات</h2>
+    </div>
+    <div class="settings-subtabs">
+      <button class="settings-subtab active" data-sstab="institution">معلومات المؤسسة</button>
+      <button class="settings-subtab" data-sstab="teachers">الأساتذة</button>
+      <button class="settings-subtab" data-sstab="classes">الأقسام</button>
+      <button class="settings-subtab" data-sstab="rooms">القاعات</button>
+      <button class="settings-subtab" data-sstab="subjects">المواد</button>
+      <button class="settings-subtab" data-sstab="days">أسماء الأيام</button>
+      <button class="settings-subtab" data-sstab="periods">أسماء الحصص</button>
+      <button class="settings-subtab" data-sstab="colors">🎨 الألوان</button>
+      <button class="settings-subtab" data-sstab="icons">🖼️ أيقونات المواد</button>
+    </div>
+    <div class="settings-body" id="settingsBody"></div>
+    <div class="settings-footer">
+      <button class="btn btn-primary" id="btnSaveSettings">حفظ التغييرات</button>
+      <button class="btn btn-secondary" id="btnResetSettings">إعادة الضبط الافتراضي</button>
+      <span id="settingsStatus" class="muted"></span>
+    </div>
+  </div>
+</div>
+
+<main id="app">
+
+  <!-- ============ TAB 1: IMPORT / GENERATE ============ -->
+  <section class="tab-panel active" id="tab-import">
+
+    <div class="card">
+      <h2>أ. تحميل ملف بيانات FET</h2>
+      <p class="muted">حمّل ملف <code>.fet</code> يحتوي على الأساتذة والمواد والأفواج والقاعات والأنشطة والقيود.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-primary" id="btnOpenFet">📂 اختيار ملف .fet</button>
+        <button class="btn btn-secondary" id="btnLoadSampleFet" type="button">✨ تحميل ملف تجريبي جاهز (نموذج متوسطة)</button>
+      </div>
+      <div class="status" id="fetLoadStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>ب. توليد الجدول بمحرك FET-CL</h2>
+      <p class="muted">في الوضع المتعدد تُشغّل المسالك فعلياً بالتوازي، ولكل مسلك Random Seed ومجلد سجل مستقل. يعتمد التطبيق أول حل كامل، أو أفضل مسار حسب Max Placed عند انتهاء الوقت.</p>
+      <p class="muted">
+        يشغّل هذا الخيار محرك <code>fet-cl</code> (المضمّن محلياً في مجلد <code>bin</code>) على ملف FET المحمّل مباشرة، <strong>دون فتح واجهة FET الرسومية</strong>، ويقرأ النتيجة مباشرة.
+      </p>
+      <div class="form-row">
+        <label>مسار fet-cl:</label>
+        <input type="text" id="fetClPath" placeholder="bin/fet-cl">
+        <button class="btn btn-secondary" id="btnPickFetCl">استعراض…</button>
+      </div>
+      <div class="form-row">
+        <label>مجلد المخرجات:</label><input type="text" id="outputDir" placeholder="يُختار تلقائياً" readonly><button class="btn btn-secondary" id="btnPickOutput">اختيار…</button>
+      </div>
+      <div class="form-row">
+        <label>نوع التوليد:</label>
+        <select id="genType">
+          <option value="single">جدول واحد (إنتاج عادي)</option>
+          <option value="multi">عدة جداول / عدة مسالك</option>
+        </select>
+      </div>
+      <div class="form-row" id="singleFields">
+        <label>الحد الأقصى للوقت (ثانية):</label>
+        <input type="number" id="timeLimit" value="60" min="5" style="width:100px">
+      </div>
+      <div id="multiAttemptFields" class="settings-row-group" style="display:none;">
+        <div class="form-row">
+          <label>عدد مجموعات الجداول:</label><input type="number" id="numTables" value="1" min="1" max="20" style="width:80px" title="عدد مجموعات التشغيل؛ للاستخدام المعتاد اتركه 1">
+          <label>عدد المسالك المتوازية:</label><input type="number" id="tracksPerTable" value="3" min="1" max="20" style="width:80px" title="كل مسلك عملية fet-cl مستقلة تعمل بالتوازي">
+          <label>الوقت لكل محاولة (ثانية):</label><input type="number" id="trackTimeLimit" value="60" min="5" style="width:100px">
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" id="stopOnPerfect" checked> التوقف عند إيجاد حل كامل</label>
+          <label><input type="checkbox" id="keepAllAttempts"> الاحتفاظ بنتائج جميع المحاولات على القرص</label>
+          <label><input type="checkbox" id="useRandomSeed" checked> استخدام Random Seed مختلف لكل مسار (موصى به؛ توجد إعادة تلقائية بدون الخيار إذا كانت نسخة fet-cl لا تدعمه)</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <span class="muted">⏱ الوقت المنقضي: <strong id="genTimer">00:00</strong></span>
+        <span class="muted" id="genPlacedInfo">أقصى أنشطة تم توزيعها: — </span>
+      </div>
+      <div class="progress-wrap"><div id="generationProgress" class="progress-bar"></div></div>
+      <div id="trackProgressPanel" class="track-progress-panel"></div>
+      <div class="audio-alert-panel no-print" id="audioAlertPanel">
+        <h3>🔔 إعدادات التنبيه الصوتي للإنتاج</h3>
+        <label><input type="checkbox" id="audio-alert-toggle" checked> تفعيل رنين المنبه عند نجاح الجدول أو توقيفه</label>
+        <label>مدة الرنين: <input type="number" id="audio-alert-duration" value="10" min="2" max="120"> ثانية</label>
+      </div>
+      <button class="btn btn-primary" id="btnGenerate" disabled>⚙️ توليد الجدول الآن</button><button class="btn btn-secondary" id="btnStopGenerate" disabled>⏹ إيقاف التوليد (يحفظ أفضل نتيجة)</button>
+      <div class="status" id="genStatus"></div>
+      <pre class="log-box" id="genLog" style="display:none;"></pre>
+    </div>
+
+    <div class="card">
+      <h2>ج. أو: استيراد جدول مولّد مسبقاً</h2>
+      <p class="muted">
+        إن كنت قد ولّدت الجدول مسبقاً ببرنامج FET المكتبي (سطح المكتب)، استورد ملف
+        <code>..._activities.xml</code> الناتج مباشرة دون الحاجة لتشغيل المحرك من هنا.
+      </p>
+      <button class="btn btn-secondary" id="btnOpenActivities">📂 استيراد ملف الحصص (activities.xml)</button>
+      <div class="status" id="actLoadStatus"></div>
+    </div>
+
+  </section>
+
+  <!-- ============ TAB 2: DATA BROWSER ============ -->
+  <section class="tab-panel" id="tab-data">
+    <div class="subtabs">
+      <button class="subtab-btn active" data-sub="constraints">القيود</button>
+      <button class="subtab-btn" data-sub="activities">الأنشطة / الحصص</button>
+      <button class="subtab-btn" data-sub="teachers">الأساتذة</button>
+      <button class="subtab-btn" data-sub="groups">الأقسام</button>
+      <button class="subtab-btn" data-sub="rooms">القاعات</button>
+    </div>
+    <input type="text" class="search-box" id="dataSearch" placeholder="🔍 بحث…"><span id="dataCount" class="muted"></span><button class="btn btn-secondary" id="btnSaveData" style="display:none">حفظ الأسماء في ملف FET</button>
+    <div class="table-wrap">
+      <table id="dataTable"><thead></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ TAB 3: TIMETABLES ============ -->
+  <section class="tab-panel" id="tab-timetables">
+    <div class="card no-print">
+      <div class="form-row">
+        <label>نوع الجدول:</label>
+        <select id="ttType">
+          <option value="group">قسم</option>
+          <option value="teacher">أستاذ</option>
+          <option value="room">قاعة</option>
+        </select>
+        <label>الاختيار:</label>
+        <select id="ttEntity"></select>
+        <button class="btn btn-primary" id="btnShowTT">عرض</button>
+      </div>
+      <div class="display-options-panel no-print" id="displayOptionsPanel">
+        <strong>عناصر الخانة:</strong>
+        <label><input type="checkbox" id="chk-show-subject" checked> اسم المادة</label>
+        <label><input type="checkbox" id="chk-show-teacher" checked> اسم الأستاذ</label>
+        <label><input type="checkbox" id="chk-show-room" checked> اسم القاعة</label>
+        <label><input type="checkbox" id="chk-show-students" checked> اسم القسم / الفوج</label>
+        <label style="color:#e67e22;"><input type="checkbox" id="chk-show-images" checked> إظهار أيقونات المواد</label>
+        <label style="color:#27ae60;font-weight:700;"><input type="checkbox" id="chk-print-color" checked> تفعيل الألوان</label>
+        <label>لوّن الخانات حسب:</label>
+        <select id="colorByDim">
+          <option value="subjects">المادة</option>
+          <option value="teachers">الأستاذ</option>
+          <option value="classes">القسم</option>
+          <option value="rooms">القاعة</option>
+        </select>
+        <span class="muted">يمكن تغييرها ثم الضغط على «عرض» أو «الجدول الشامل».</span>
+      </div>
+      <div class="form-row">
+        <label>الاتجاه:</label><select id="printOrientation"><option value="landscape" selected>أفقي (Landscape)</option><option value="portrait">عمودي</option></select>
+        <button class="btn btn-secondary" id="btnApplyPrint">تطبيق المعاينة</button>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-secondary" id="btnPrintOne">🖨️ طباعة هذا الجدول</button>
+        <button class="btn btn-secondary" id="btnPrintAll">🖨️ طباعة الكل (فردياً ثم في ملف واحد)</button>
+        <button class="btn btn-secondary" id="btnShowMaster">📊 الجدول الشامل (الكل أفقياً في جدول واحد)</button>
+        <button class="btn btn-secondary" id="btnPrintMaster">🖨️ طباعة الجدول الشامل</button>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-secondary" id="btnExportExcelSingle">📊 تصدير هذا الجدول إلى Excel</button>
+        <button class="btn btn-secondary" id="btnExportExcelMaster">📊 تصدير الجدول الشامل إلى Excel</button>
+      </div>
+    </div>
+    <div id="ttSingleContainer"></div>
+    <div id="ttAllContainer"></div>
+    <div id="ttMasterContainer"></div>
+  </section>
+
+  <section class="tab-panel" id="tab-settings" style="display:none;"></section>
+
+  <!-- ============ TAB 4: VACANT ROOMS ============ -->
+  <section class="tab-panel" id="tab-vacant">
+    <div class="card no-print">
+      <p class="muted">جدول يوضّح القاعات الشاغرة (غير المستعملة) في كل يوم وفترة.</p>
+      <button class="btn btn-primary" id="btnBuildVacant">🔄 بناء جدول القاعات الشاغرة</button>
+      <button class="btn btn-secondary" id="btnPrintVacant">🖨️ طباعة</button>
+    </div>
+    <div id="vacantContainer"></div>
+  </section>
+
+  <!-- ============ TAB 5: aSc EXPORT ============ -->
+  <section class="tab-panel" id="tab-export">
+    <div class="card">
+      <h2>تصدير XML لبرنامج aSc Timetables</h2>
+      <div class="radio-group">
+        <label class="radio-option active" id="optAll">
+          <input type="radio" name="ascMode" value="all" checked>
+          <span><strong>الكل</strong><br><small>هيكل كامل (أساتذة، أقسام، مواد، قاعات، دروس، بطاقات)</small></span>
+        </label>
+        <label class="radio-option" id="optCards">
+          <input type="radio" name="ascMode" value="cards">
+          <span><strong>توقيت الحصص فقط</strong><br><small>قائمة نصية: الفوج، اليوم، الفترة، المادة، الأستاذ، القاعة</small></span>
+        </label>
+      </div>
+      <button class="btn btn-primary" id="btnExport">⬇️ تصدير</button>
+      <div class="status" id="exportStatus"></div>
+      <pre class="log-box" id="exportPreview" style="display:none;"></pre>
+    </div>
+  </section>
+
+</main>
+
+<script src="bridge.js"></script>
+<script src="renderer.js"></script>
+
+<style>
+#fet-desktop-nav.top-nav-bar{position:fixed;top:10px;left:50%;transform:translateX(-50%);bottom:auto;z-index:99999;display:flex;gap:8px;font-family:system-ui,sans-serif}
+#fet-desktop-nav a,#fet-desktop-nav button{background:#0f172a;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 8px 20px rgba(15,23,42,.25)}
+#fet-desktop-nav a:hover,#fet-desktop-nav button:hover{background:#14b8a6}
+</style>
+<div id="fet-desktop-nav" class="no-print top-nav-bar" class="no-print">
+  <button type="button" id="btnGoManager">العودة إلى المدير</button>
+</div>
+<script>
+document.getElementById('btnGoManager')?.addEventListener('click', function(){
+  if (window.fetApp && window.fetApp.navigate) window.fetApp.navigate('manager');
+  else location.href = '../index.html';
+});
+</script>
+
+</body>
+</html>
